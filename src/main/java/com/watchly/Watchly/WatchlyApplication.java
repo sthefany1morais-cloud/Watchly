@@ -8,6 +8,6 @@ public class WatchlyApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(WatchlyApplication.class, args);
-	}
+	} 
 
 }
