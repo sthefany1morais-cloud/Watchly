@@ -1,0 +1,178 @@
+package com.watchly.Watchly.service;
+
+import com.watchly.Watchly.dto.UsuarioDTO;
+import com.watchly.Watchly.model.UsuarioEntity;
+import com.watchly.Watchly.repository.UsuarioRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class UsuarioService {
+
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+
+// ===================== CREATE (REGISTRO) =====================
+
+    @Transactional
+    public UsuarioDTO.Response create(UsuarioDTO.Request request) {
+        // Verifica se email já existe
+        if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email já cadastrado");
+        }
+
+        // Verifica se nome de usuário já existe
+        if (usuarioRepository.findByNomeUsuario(request.getNomeUsuario()).isPresent()) {
+            throw new IllegalArgumentException("Nome de usuário já está em uso");
+        }
+
+        UsuarioEntity entity = new UsuarioEntity();
+        entity.setNomeUsuario(request.getNomeUsuario());
+        entity.setEmail(request.getEmail());
+        entity.setSenhaHash(passwordEncoder.encode(request.getSenha()));
+        entity.setCriadoEm(LocalDateTime.now());
+
+        // Imagem padrão (pode ser uma URL padrão ou null)
+        entity.setImagemPerfil("https://cdn.watchly.com/default-avatar.png");
+
+        UsuarioEntity saved = usuarioRepository.save(entity);
+        return mapToResponse(saved);
+    }
+
+// ===================== READ =====================
+
+    @Transactional(readOnly = true)
+    public List<UsuarioDTO.Response> findAll() {
+        return usuarioRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public UsuarioDTO.Response findById(Long id) {
+        UsuarioEntity entity = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        return mapToResponse(entity);
+    }
+
+    @Transactional(readOnly = true)
+    public UsuarioDTO.Response findByEmail(String email) {
+        UsuarioEntity entity = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        return mapToResponse(entity);
+    }
+
+    @Transactional(readOnly = true)
+    public UsuarioDTO.Response findByNomeUsuario(String nomeUsuario) {
+        UsuarioEntity entity = usuarioRepository.findByNomeUsuario(nomeUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        return mapToResponse(entity);
+    }
+
+// ===================== UPDATE =====================
+
+    @Transactional
+    public UsuarioDTO.Response update(Long id, UsuarioDTO.Request request) {
+        UsuarioEntity entity = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        // Verifica se o novo email já está em uso por outro usuário
+        usuarioRepository.findByEmail(request.getEmail())
+                .ifPresent(userExistente -> {
+                    if (!userExistente.getId().equals(id)) {
+                        throw new IllegalArgumentException("Email já está em uso");
+                    }
+                });
+
+        // Verifica se o novo nome de usuário já está em uso por outro usuário
+        usuarioRepository.findByNomeUsuario(request.getNomeUsuario())
+                .ifPresent(userExistente -> {
+                    if (!userExistente.getId().equals(id)) {
+                        throw new IllegalArgumentException("Nome de usuário já está em uso");
+                    }
+                });
+
+        entity.setNomeUsuario(request.getNomeUsuario());
+        entity.setEmail(request.getEmail());
+
+        // Só atualiza a senha se for fornecida uma nova
+        if (request.getSenha() != null && !request.getSenha().isBlank()) {
+            entity.setSenhaHash(passwordEncoder.encode(request.getSenha()));
+        }
+
+        UsuarioEntity updated = usuarioRepository.save(entity);
+        return mapToResponse(updated);
+    }
+
+    @Transactional
+    public UsuarioDTO.Response atualizarImagemPerfil(Long id, String urlImagem) {
+        UsuarioEntity entity = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        entity.setImagemPerfil(urlImagem);
+        UsuarioEntity updated = usuarioRepository.save(entity);
+        return mapToResponse(updated);
+    }
+
+    @Transactional
+    public void atualizarSenha(Long id, String senhaAntiga, String novaSenha) {
+        UsuarioEntity entity = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        // Verifica se a senha antiga está correta
+        if (!passwordEncoder.matches(senhaAntiga, entity.getSenhaHash())) {
+            throw new IllegalArgumentException("Senha atual incorreta");
+        }
+
+        entity.setSenhaHash(passwordEncoder.encode(novaSenha));
+        usuarioRepository.save(entity);
+    }
+
+// ===================== DELETE =====================
+
+    @Transactional
+    public void delete(Long id) {
+        if (!usuarioRepository.existsById(id)) {
+            throw new RuntimeException("Usuário não encontrado");
+        }
+        usuarioRepository.deleteById(id);
+    }
+
+// ===================== AUTENTICAÇÃO =====================
+
+    @Transactional(readOnly = true)
+    public UsuarioDTO.Response login(String email, String senha) {
+        UsuarioEntity entity = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Credenciais inválidas"));
+
+        if (!passwordEncoder.matches(senha, entity.getSenhaHash())) {
+            throw new IllegalArgumentException("Credenciais inválidas");
+        }
+
+        return mapToResponse(entity);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email) {
+        return usuarioRepository.findByEmail(email).isPresent();
+    }
+
+// ===================== HELPERS =====================
+
+    private UsuarioDTO.Response mapToResponse(UsuarioEntity entity) {
+        UsuarioDTO.Response response = new UsuarioDTO.Response();
+        response.setId(entity.getId());
+        response.setNomeUsuario(entity.getNomeUsuario());
+        response.setEmail(entity.getEmail());
+        response.setImagemPerfil(entity.getImagemPerfil());
+        response.setCriadoEm(entity.getCriadoEm());
+        return response;
+    }
+}
