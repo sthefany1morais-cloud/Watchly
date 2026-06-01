@@ -41,5 +41,5 @@ public class UsuarioEntity {
     private LocalDateTime criadoEm;
 
     @OneToMany(mappedBy = "usuario")
-    private Set<UsuarioFilme> filmes = new HashSet<>();
+    private Set<UsuarioFilmeEntity> filmes = new HashSet<>();
 }

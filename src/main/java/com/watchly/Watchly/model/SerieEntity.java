@@ -3,8 +3,8 @@ package com.watchly.Watchly.model;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -50,7 +50,7 @@ public class SerieEntity {
 
     @OneToMany(mappedBy = "serie", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("numero ASC")
-    private List<Temporada> temporadas = new ArrayList<>();
+    private List<TemporadaEntity> temporadas = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
@@ -58,5 +58,5 @@ public class SerieEntity {
             joinColumns = @JoinColumn(name = "serie_id"),
             inverseJoinColumns = @JoinColumn(name = "genero_id")
     )
-    private Set<Genero> generos = new HashSet<>();
+    private Set<GeneroEntity> generos = new HashSet<>();
 }
