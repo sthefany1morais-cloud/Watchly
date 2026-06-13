@@ -31,19 +31,28 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Liberar Swagger e docs
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/webjars/**").permitAll()
+
+                        // POST - apenas ADMIN pode criar filmes/séries
                         .requestMatchers(HttpMethod.POST, "/api/filmes").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/series").hasRole("ADMIN")
 
+                        // PUT/DELETE - apenas ADMIN pode editar/excluir
                         .requestMatchers(HttpMethod.PUT, "/api/filmes/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/filmes/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/series/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/series/**").hasRole("ADMIN")
 
+                        // GET - qualquer usuário autenticado pode ver
                         .requestMatchers(HttpMethod.GET, "/api/filmes").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/series").authenticated()
 
+                        // ENDPOINTS DE USUÁRIO
                         .requestMatchers("/api/usuarios/**").authenticated()
 
+                        // Qualquer outra requisição precisa estar autenticada
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

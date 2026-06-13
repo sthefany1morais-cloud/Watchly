@@ -165,13 +165,20 @@ public class UsuarioService {
 
 // ===================== HELPERS =====================
 
+    // Substitua o método mapToResponse por:
+
     private UsuarioDTO.Response mapToResponse(UsuarioEntity entity) {
         UsuarioDTO.Response response = new UsuarioDTO.Response();
         response.setId(entity.getId());
         response.setNomeUsuario(entity.getNomeUsuario());
         response.setEmail(entity.getEmail());
         response.setImagemPerfil(entity.getImagemPerfil());
-        response.setCriadoEm(entity.getCriadoEm());
+
+        // Converte LocalDateTime para String
+        if (entity.getCriadoEm() != null) {
+            response.setCriadoEm(entity.getCriadoEm().toString());
+        }
+
         return response;
     }
 }
