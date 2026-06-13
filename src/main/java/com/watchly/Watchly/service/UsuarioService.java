@@ -39,7 +39,6 @@ public class UsuarioService {
         entity.setSenhaHash(passwordEncoder.encode(request.getSenha()));
         entity.setCriadoEm(LocalDateTime.now());
 
-        // Imagem padrão (pode ser uma URL padrão ou null)
         entity.setImagemPerfil("https://cdn.watchly.com/default-avatar.png");
 
         UsuarioEntity saved = usuarioRepository.save(entity);
