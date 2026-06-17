@@ -1,5 +1,6 @@
 package com.watchly.Watchly.service;
 
+import com.watchly.Watchly.dto.TokenDTO;
 import com.watchly.Watchly.dto.UsuarioDTO;
 import com.watchly.Watchly.model.UsuarioEntity;
 import com.watchly.Watchly.repository.UsuarioRepository;
@@ -7,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.watchly.Watchly.config.JwtService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,11 +20,13 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
 // ===================== CREATE (REGISTRO) =====================
 
     @Transactional
-    public UsuarioDTO.Response create(UsuarioDTO.Request request) {
+    public TokenDTO create(UsuarioDTO.Request request) {
+
         // Verifica se email já existe
         if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email já cadastrado");
@@ -38,11 +42,14 @@ public class UsuarioService {
         entity.setEmail(request.getEmail());
         entity.setSenhaHash(passwordEncoder.encode(request.getSenha()));
         entity.setCriadoEm(LocalDateTime.now());
-
         entity.setImagemPerfil("https://cdn.watchly.com/default-avatar.png");
+        entity.setRole("USER");
 
         UsuarioEntity saved = usuarioRepository.save(entity);
-        return mapToResponse(saved);
+
+        String token = jwtService.generateToken(saved);
+
+        return new TokenDTO(token);
     }
 
 // ===================== READ =====================
@@ -145,23 +152,6 @@ public class UsuarioService {
     }
 
 // ===================== AUTENTICAÇÃO =====================
-
-    @Transactional(readOnly = true)
-    public UsuarioDTO.Response login(String email, String senha) {
-        UsuarioEntity entity = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Credenciais inválidas"));
-
-        if (!passwordEncoder.matches(senha, entity.getSenhaHash())) {
-            throw new IllegalArgumentException("Credenciais inválidas");
-        }
-
-        return mapToResponse(entity);
-    }
-
-    @Transactional(readOnly = true)
-    public boolean existsByEmail(String email) {
-        return usuarioRepository.findByEmail(email).isPresent();
-    }
 
 // ===================== HELPERS =====================
 

@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -24,52 +25,73 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
         http
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .authorizeHttpRequests(auth -> auth
-                        // Liberar Swagger e docs
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/webjars/**").permitAll()
 
-                        // POST - apenas ADMIN pode criar filmes/séries
+                        // Login
+                        .requestMatchers("/auth/**").permitAll()
+
+                        // Swagger
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/webjars/**"
+                        ).permitAll()
+
+                        // Filmes
                         .requestMatchers(HttpMethod.POST, "/api/filmes").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/series").hasRole("ADMIN")
-
-                        // PUT/DELETE - apenas ADMIN pode editar/excluir
                         .requestMatchers(HttpMethod.PUT, "/api/filmes/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/filmes/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/filmes/**").authenticated()
+
+                        // Séries
+                        .requestMatchers(HttpMethod.POST, "/api/series").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/series/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/series/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/series/**").authenticated()
 
-                        // GET - qualquer usuário autenticado pode ver
-                        .requestMatchers(HttpMethod.GET, "/api/filmes").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/series").authenticated()
-
-                        // ENDPOINTS DE USUÁRIO
+                        // Usuários
                         .requestMatchers("/api/usuarios/**").authenticated()
 
-                        // Qualquer outra requisição precisa estar autenticada
                         .anyRequest().authenticated()
                 )
+
                 .authenticationProvider(authenticationProvider())
-                .httpBasic(basic -> {});
+
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+
+        DaoAuthenticationProvider provider =
+                new DaoAuthenticationProvider(userDetailsService);
+
         provider.setPasswordEncoder(passwordEncoder());
+
         return provider;
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config
+    ) throws Exception {
         return config.getAuthenticationManager();
     }
 
@@ -77,4 +99,5 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
 }

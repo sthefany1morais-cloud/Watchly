@@ -11,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
@@ -19,18 +21,6 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
-
-    @PostMapping("/registro")
-    @Operation(summary = "Registrar usuário", description = "Cria uma nova conta de usuário")
-    public ResponseEntity<UsuarioDTO.Response> create(@RequestBody UsuarioDTO.Request request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.create(request));
-    }
-
-    @PostMapping("/login")
-    @Operation(summary = "Login", description = "Autentica o usuário e retorna seus dados")
-    public ResponseEntity<UsuarioDTO.Response> login(@RequestBody UsuarioDTO.LoginRequest request) {
-        return ResponseEntity.ok(usuarioService.login(request.getEmail(), request.getSenha()));
-    }
 
     @GetMapping
     @Operation(summary = "Listar todos os usuários", description = "Retorna lista de todos os usuários (Apenas ADMIN)")
