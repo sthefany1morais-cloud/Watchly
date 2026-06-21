@@ -56,6 +56,10 @@ public class FilmeService {
 
     @Transactional
     public void delete(Long id) {
+        if (!filmeRepository.existsById(id)) {
+            throw new RuntimeException("Filme não encontrado");
+        }
+
         filmeRepository.deleteById(id);
     }
 
@@ -66,22 +70,37 @@ public class FilmeService {
      * Se o filme ainda não estiver na lista, adiciona como NÃO_INICIADO.
      */
     @Transactional
-    public FilmeDTO.UsuarioFilmeResponse adicionarOuAtualizarFilme(Long usuarioId, Long filmeId, String novoStatus) {
+    public FilmeDTO.UsuarioFilmeResponse adicionarOuAtualizarFilme(
+            Long usuarioId,
+            Long filmeId,
+            String novoStatus) {
+
         UsuarioEntity usuario = getUsuarioOrThrow(usuarioId);
+
         FilmeEntity filme = filmeRepository.findById(filmeId)
                 .orElseThrow(() -> new RuntimeException("Filme não encontrado"));
 
-        UsuarioFilmeEntity usuarioFilme = usuarioFilmeRepository.findByUsuarioIdAndFilmeId(usuarioId, filmeId)
-                .orElseGet(() -> {
-                    UsuarioFilmeEntity novo = new UsuarioFilmeEntity();
-                    novo.setUsuario(usuario);
-                    novo.setFilme(filme);
-                    novo.setAdicionadoEm(LocalDateTime.now());
-                    return novo;
-                });
+        // Validação de status
+        if (!"NAO_INICIADO".equals(novoStatus)
+                && !"ASSISTIDO".equals(novoStatus)) {
 
-        // Atualiza o status
-        usuarioFilme.setStatus(novoStatus); // "NAO_INICIADO" ou "ASSISTIDO"
+            throw new IllegalArgumentException(
+                    "Status inválido. Utilize NAO_INICIADO ou ASSISTIDO."
+            );
+        }
+
+        UsuarioFilmeEntity usuarioFilme =
+                usuarioFilmeRepository.findByUsuarioIdAndFilmeId(usuarioId, filmeId)
+                        .orElseGet(() -> {
+                            UsuarioFilmeEntity novo = new UsuarioFilmeEntity();
+                            novo.setUsuario(usuario);
+                            novo.setFilme(filme);
+                            novo.setAdicionadoEm(LocalDateTime.now());
+                            return novo;
+                        });
+
+        usuarioFilme.setStatus(novoStatus);
+
         usuarioFilmeRepository.save(usuarioFilme);
 
         return mapToUsuarioFilmeResponse(usuarioFilme);
