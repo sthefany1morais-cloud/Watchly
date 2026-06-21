@@ -60,7 +60,11 @@ public class SerieService {
 
     @Transactional
     public void delete(Long id) {
-        serieRepository.deleteById(id);
+
+        SerieEntity serie = serieRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Série não encontrada"));
+
+        serieRepository.delete(serie);
     }
 
     // ===================== USUÁRIO =====================
