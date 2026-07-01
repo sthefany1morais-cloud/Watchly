@@ -57,8 +57,6 @@ public class SerieController {
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== ENDPOINTS DO USUÁRIO ====================
-
     @PostMapping("/{serieId}/usuario/{usuarioId}")
     @Operation(summary = "Adicionar série à lista do usuário", description = "Adiciona uma série à lista de acompanhamento do usuário")
     public ResponseEntity<SerieDTO.UsuarioSerieResponse> adicionarSerie(

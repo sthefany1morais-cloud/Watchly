@@ -22,8 +22,6 @@ public class FilmeService {
     private final UsuarioFilmeRepository usuarioFilmeRepository;
     private final UsuarioRepository usuarioRepository;
 
-    // ===================== CRUD ADMIN =====================
-
     @Transactional
     public FilmeDTO.Response create(FilmeDTO.Request request) {
         FilmeEntity entity = new FilmeEntity();
@@ -63,12 +61,6 @@ public class FilmeService {
         filmeRepository.deleteById(id);
     }
 
-    // ===================== USUÁRIO =====================
-
-    /**
-     * Adiciona ou atualiza o status de um filme na lista do usuário.
-     * Se o filme ainda não estiver na lista, adiciona como NÃO_INICIADO.
-     */
     @Transactional
     public FilmeDTO.UsuarioFilmeResponse adicionarOuAtualizarFilme(
             Long usuarioId,
@@ -80,7 +72,6 @@ public class FilmeService {
         FilmeEntity filme = filmeRepository.findById(filmeId)
                 .orElseThrow(() -> new RuntimeException("Filme não encontrado"));
 
-        // Validação de status
         if (!"NAO_INICIADO".equals(novoStatus)
                 && !"ASSISTIDO".equals(novoStatus)) {
 
@@ -106,9 +97,6 @@ public class FilmeService {
         return mapToUsuarioFilmeResponse(usuarioFilme);
     }
 
-    /**
-     * Favorita ou desfavorita um filme para o usuário.
-     */
     @Transactional
     public Boolean favoritar(Long usuarioId, Long filmeId) {
         UsuarioEntity usuario = getUsuarioOrThrow(usuarioId);
@@ -119,11 +107,9 @@ public class FilmeService {
                 .orElse(null);
 
         if (favorito != null) {
-            // Se já é favorito, remove
             filmeFavoritoRepository.delete(favorito);
             return false;
         } else {
-            // Se não é favorito, adiciona
             FilmeFavoritoEntity novo = new FilmeFavoritoEntity();
             novo.setUsuario(usuario);
             novo.setFilme(filme);
@@ -145,8 +131,6 @@ public class FilmeService {
                 .map(fav -> mapToUsuarioFilmeResponseByEntity(fav.getFilme(), true, fav.getUsuario().getId()))
                 .collect(Collectors.toList());
     }
-
-    // ===================== HELPERS =====================
 
     private void mapRequestToEntity(FilmeDTO.Request request, FilmeEntity entity) {
         entity.setTitulo(request.getTitulo());
@@ -201,7 +185,6 @@ public class FilmeService {
 
         response.setFavorito(favorito);
 
-        // Pega o status da tabela usuario_filme
         usuarioFilmeRepository.findByUsuarioIdAndFilmeId(usuarioId, f.getId())
                 .ifPresent(uf -> {
                     response.setStatus(uf.getStatus());

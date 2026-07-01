@@ -57,8 +57,6 @@ public class FilmeController {
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== ENDPOINTS DO USUÁRIO ====================
-
     @PostMapping("/{filmeId}/usuario/{usuarioId}")
     @Operation(summary = "Adicionar filme à lista do usuário", description = "Adiciona ou atualiza o status de um filme na lista do usuário")
     public ResponseEntity<FilmeDTO.UsuarioFilmeResponse> adicionarFilme(

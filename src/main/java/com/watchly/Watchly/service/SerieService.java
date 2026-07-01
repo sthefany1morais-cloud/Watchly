@@ -26,8 +26,6 @@ public class SerieService {
     private final TemporadaRepository temporadaRepository;
     private final EpisodioRepository episodioRepository;
 
-    // ===================== CRUD ADMIN =====================
-
     @Transactional
     public SerieDTO.Response create(SerieDTO.Request request) {
         SerieEntity entity = new SerieEntity();
@@ -66,8 +64,6 @@ public class SerieService {
 
         serieRepository.delete(serie);
     }
-
-    // ===================== USUÁRIO =====================
 
     @Transactional
     public SerieDTO.UsuarioSerieResponse adicionarSerie(Long usuarioId, Long serieId) {
@@ -121,7 +117,6 @@ public class SerieService {
         TemporadaEntity temporada = episodio.getTemporada();
         SerieEntity serie = temporada.getSerie();
 
-        // Busca ou cria registro usuario_episodio
         UsuarioEpisodioEntity usuarioEpisodio = usuarioEpisodioRepository
                 .findByUsuarioIdAndEpisodioId(usuarioId, episodioId)
                 .orElseGet(() -> {
@@ -140,10 +135,8 @@ public class SerieService {
 
         usuarioEpisodioRepository.save(usuarioEpisodio);
 
-        // Atualiza progresso da temporada
         atualizarProgressoTemporada(usuarioId, temporada);
 
-        // Atualiza progresso da série
         atualizarProgressoSerie(usuarioId, serie);
     }
 
@@ -160,8 +153,6 @@ public class SerieService {
                 .map(fav -> mapToUsuarioSerieResponseByEntity(fav.getSerie(), true, usuarioId))
                 .collect(Collectors.toList());
     }
-
-    // ===================== LÓGICA DE PROGRESSO =====================
 
     private void inicializarProgressoTemporadas(UsuarioEntity usuario, SerieEntity serie) {
         for (TemporadaEntity temporada : serie.getTemporadas()) {
@@ -244,8 +235,6 @@ public class SerieService {
         }
     }
 
-    // ===================== HELPERS =====================
-
     private void mapRequestToEntity(SerieDTO.Request request, SerieEntity entity) {
         entity.setTitulo(request.getTitulo());
         entity.setDescricao(request.getDescricao());
@@ -296,14 +285,12 @@ public class SerieService {
         response.setUrlPoster(s.getUrlPoster());
         response.setFavorito(favorito);
 
-        // Busca ostatus da série na lista do usuário
         usuarioSerieRepository.findByUsuarioIdAndSerieId(usuarioId, s.getId())
                 .ifPresent(us -> {
                     response.setStatus(us.getStatus());
                     response.setAdicionadoEm(us.getAdicionadoEm());
                 });
 
-        // Monta progresso por temporada
         List<SerieDTO.TemporadaProgresso> progressos = s.getTemporadas().stream()
                 .map(t -> {
                     SerieDTO.TemporadaProgresso tp = new SerieDTO.TemporadaProgresso();

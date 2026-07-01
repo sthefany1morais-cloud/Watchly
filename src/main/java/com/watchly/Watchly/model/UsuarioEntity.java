@@ -45,7 +45,6 @@ public class UsuarioEntity implements UserDetails {
     @Column(name = "role", nullable = false, length = 20)
     private String role; // "ADMIN" ou "USER"
 
-    // Implementação do UserDetails
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role));

@@ -22,17 +22,13 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-// ===================== CREATE (REGISTRO) =====================
-
     @Transactional
     public TokenDTO create(UsuarioDTO.Request request) {
 
-        // Verifica se email já existe
         if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email já cadastrado");
         }
 
-        // Verifica se nome de usuário já existe
         if (usuarioRepository.findByNomeUsuario(request.getNomeUsuario()).isPresent()) {
             throw new IllegalArgumentException("Nome de usuário já está em uso");
         }
@@ -51,8 +47,6 @@ public class UsuarioService {
 
         return new TokenDTO(token);
     }
-
-// ===================== READ =====================
 
     @Transactional(readOnly = true)
     public List<UsuarioDTO.Response> findAll() {
@@ -82,14 +76,12 @@ public class UsuarioService {
         return mapToResponse(entity);
     }
 
-// ===================== UPDATE =====================
 
     @Transactional
     public UsuarioDTO.Response update(Long id, UsuarioDTO.Request request) {
         UsuarioEntity entity = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        // Verifica se o novo email já está em uso por outro usuário
         usuarioRepository.findByEmail(request.getEmail())
                 .ifPresent(userExistente -> {
                     if (!userExistente.getId().equals(id)) {
@@ -97,7 +89,6 @@ public class UsuarioService {
                     }
                 });
 
-        // Verifica se o novo nome de usuário já está em uso por outro usuário
         usuarioRepository.findByNomeUsuario(request.getNomeUsuario())
                 .ifPresent(userExistente -> {
                     if (!userExistente.getId().equals(id)) {
@@ -108,7 +99,6 @@ public class UsuarioService {
         entity.setNomeUsuario(request.getNomeUsuario());
         entity.setEmail(request.getEmail());
 
-        // Só atualiza a senha se for fornecida uma nova
         if (request.getSenha() != null && !request.getSenha().isBlank()) {
             entity.setSenhaHash(passwordEncoder.encode(request.getSenha()));
         }
@@ -132,7 +122,6 @@ public class UsuarioService {
         UsuarioEntity entity = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        // Verifica se a senha antiga está correta
         if (!passwordEncoder.matches(senhaAntiga, entity.getSenhaHash())) {
             throw new IllegalArgumentException("Senha atual incorreta");
         }
@@ -140,8 +129,6 @@ public class UsuarioService {
         entity.setSenhaHash(passwordEncoder.encode(novaSenha));
         usuarioRepository.save(entity);
     }
-
-// ===================== DELETE =====================
 
     @Transactional
     public void delete(Long id) {
@@ -151,12 +138,6 @@ public class UsuarioService {
         usuarioRepository.deleteById(id);
     }
 
-// ===================== AUTENTICAÇÃO =====================
-
-// ===================== HELPERS =====================
-
-    // Substitua o método mapToResponse por:
-
     private UsuarioDTO.Response mapToResponse(UsuarioEntity entity) {
         UsuarioDTO.Response response = new UsuarioDTO.Response();
         response.setId(entity.getId());
@@ -164,7 +145,6 @@ public class UsuarioService {
         response.setEmail(entity.getEmail());
         response.setImagemPerfil(entity.getImagemPerfil());
 
-        // Converte LocalDateTime para String
         if (entity.getCriadoEm() != null) {
             response.setCriadoEm(entity.getCriadoEm().toString());
         }
